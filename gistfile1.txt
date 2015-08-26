@@ -156,7 +156,7 @@
 		}
 	// </load channels file>
 
-	// <generate html from daily logs>
+	// <generate html from channel logs>
 		$htmlDir=$baseDir.'/'.'html';
 		if(!is_dir($htmlDir)) mkdir($htmlDir);
 		$channels=scandir($jsonDir);
@@ -259,7 +259,7 @@
 		}
 		asort($mostRecentChannelTimestamps);
 		$mostRecentChannelTimestamps=array_reverse($mostRecentChannelTimestamps);
-	// </generate html from daily logs>
+	// </generate html from channel logs>
 
 	// <make index html>
 		$html='<html><body><style>'.$stylesheet.'</style><div class="messages">';
