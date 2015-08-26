@@ -166,18 +166,19 @@
 			if($channel=='.' || $channel=='..') continue;
 			if(is_dir($channel)) continue;
 
-			$channelHtmlFile=$htmlDir.'/'.$channelName.'.html';
-			if(file_exists($channelHtmlFile)) {
-				echo "HTML already exists ".$channelJsonFile."\n";
-				continue;
-			}
-
 			$mostRecentChannelTimestamp=0;
 			if($message['ts']>$mostRecentChannelTimestamp) {
 				$mostRecentChannelTimestamp=$message['ts'];
 			}
 			$array=explode('.json',$channel);
 			$channelName=$array[0];
+			
+			$channelHtmlFile=$htmlDir.'/'.$channelName.'.html';
+			if(file_exists($channelHtmlFile)) {
+				echo "HTML already exists ".$channelJsonFile."\n";
+				continue;
+			}
+
 			array_push($channelNames,$channelName);
 			echo '====='."\n";
 			echo 'Generating HTML for #'.$channelName."\n";
