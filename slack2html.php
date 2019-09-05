@@ -1,4 +1,5 @@
-<?
+#!/usr/local/bin/php
+<?php
 /////////////////////
 // slack2html
 // by @levelsio
@@ -34,7 +35,7 @@
 //
 // In the HTML dir it will generate HTML files with Slack's typical styling.
 // It will also create an index.html that shows all channels
-// 
+//
 ///////////////////
 // FEEDBACK
 ///////////////////
@@ -42,12 +43,41 @@
 // Let me know any bugs by tweeting me @levelsio
 //
 // Hope this helps!
-// 
+//
 // Pieter @levelsio
 //
 /////////////////////
 
-    ini_set('memory_limit', '1024M');
+	if ($argc == 1) {
+		echo "Usage: slack2html.php <unzipped slack export> <destination for generated html>\n";
+		echo "\n";
+		echo " <unzipped slack export>            - path to the unzipped slack export\n";
+		echo " <destination for generated files>  - where to put the generated files (optional, defaults to current dir)\n";
+		echo "\n";
+		exit;
+	}
+
+	if (!is_dir($argv[1])) {
+		echo "Please feed me the path to your (unzipped) Slack export.\n";
+		exit(1);
+	}
+
+	$slack_export_path = $argv[1];
+	$destination_path = isset($argv[2]) ? $argv[2] : __DIR__;
+	if (!is_dir($destination_path)) {
+		$res = mkdir($destination_path);
+		if (!$res) {
+			echo "Could not create folder for the generated files at '{$destination_path}'.\n";
+			exit(1);
+		}
+	}
+
+	if (!file_exists($slack_export_path . '/users.json')) {
+		echo "That path doesn't seem to have a Slack export.\n";
+		exit(1);
+	}
+
+	ini_set('memory_limit', '1024M');
 	date_default_timezone_set('UTC');
 	mb_internal_encoding("UTF-8");
 	error_reporting(E_ERROR);
@@ -55,59 +85,62 @@
 	// <config>
 		$stylesheet="
 			* {
-				font-family:sans-serif;
+				font-family: sans-serif;
 			}
 			body {
-				text-align:center;
-				padding:1em;
+				padding: 1rem;
 			}
 			.messages {
-				width:100%;
-				max-width:700px;
-				text-align:left;
-				display:inline-block;
+				width: 100%;
+				max-width: 700px;
+				margin-left: auto;
+				margin-right: auto;
+				text-align: left;
+				display: block;
+			}
+			.messages .message-row {
+				margin-top: 0.5rem;
+				margin-bottom: 0.5rem;
 			}
 			.messages img {
-				background-color:rgb(248,244,240);
-				width:36px;
-				height:36px;
-				border-radius:0.2em;
-				display:inline-block;
-				vertical-align:top;
-				margin-right:0.65em;
+				background-color: rgb(248,244,240);
+				width: 36px;
+				height: 36px;
+				border-radius: 0.2em;
+				display: inline-block;
+				vertical-align: top;
+				margin-right: 0.65em;
 			}
 			.messages .time {
-				display:inline-block;
-				color:rgb(200,200,200);
-				margin-left:0.5em;
+				display: inline-block;
+				color: rgb(200,200,200);
+				margin-left: 0.5em;
 			}
 			.messages .username {
-				display:inline-block;
-				font-weight:600;
-				line-height:1;
+				display: inline-block;
+				font-weight: 600;
+				line-height: 1;
 			}
 			.messages .message {
-				display:inline-block;
-				vertical-align:top;
-				line-height:1;
-				width:calc(100% - 3em);
+				display: inline-block;
+				vertical-align: top;
+				line-height: 1;
+				width: calc(100% - 3em);
 			}
 			.messages .message .msg {
-				line-height:1.5;
+				line-height: 1.5;
 			}
 		";
 	// </config>
 
     // <compile daily logs into single channel logs>
-		$files=scandir(__DIR__);
-		$baseDir=__DIR__.'/../slack2html';
-		$jsonDir=$baseDir.'/'.'json';
-		if(!is_dir($baseDir)) mkdir($baseDir);
+		$files=scandir($slack_export_path);
+		$jsonDir=$destination_path.'/'.'json';
 		if(!is_dir($jsonDir)) mkdir($jsonDir);
 
 		foreach($files as $channel) {
 			if($channel=='.' || $channel=='..') continue;
-			if(is_dir($channel)) {
+			if(is_dir($slack_export_path.'/'.$channel)) {
 				$channelJsonFile=$jsonDir.'/'.$channel.'.json';
 				if(file_exists($channelJsonFile)) {
 					echo "JSON already exists ".$channelJsonFile."\n";
@@ -121,11 +154,11 @@
 				echo 'Combining JSON files for #'.$channel."\n";
 				echo '====='."\n";
 
-				$dates=scandir(__DIR__.'/'.$channel);
+				$dates=scandir($slack_export_path.'/'.$channel);
 				foreach($dates as $date) {
 					if(!is_dir($date)) {
 						echo '.';
-						$messages=json_decode(file_get_contents(__DIR__.'/'.$channel.'/'.$date),true);
+						$messages=json_decode(file_get_contents($slack_export_path.'/'.$channel.'/'.$date),true);
 						if(empty($messages)) continue;
 						foreach($messages as $message) {
 							array_push($chats,$message);
@@ -141,7 +174,7 @@
     // </compile daily logs into single channel logs>
 
 	// <load users file>
-		$users=json_decode(file_get_contents(__DIR__.'/'.'users.json'),true);
+		$users=json_decode(file_get_contents($slack_export_path.'/'.'users.json'),true);
 		$usersById=array();
 		foreach($users as $user) {
 			$usersById[$user['id']]=$user;
@@ -149,7 +182,7 @@
 	// </load users file>
 
 	// <load channels file>
-		$channels=json_decode(file_get_contents(__DIR__.'/'.'channels.json'),true);
+		$channels=json_decode(file_get_contents($slack_export_path.'/'.'channels.json'),true);
 		$channelsById=array();
 		foreach($channels as $channel) {
 			$channelsById[$channel['id']]=$channel;
@@ -157,7 +190,7 @@
 	// </load channels file>
 
 	// <generate html from channel logs>
-		$htmlDir=$baseDir.'/'.'html';
+		$htmlDir=$destination_path.'/'.'html';
 		if(!is_dir($htmlDir)) mkdir($htmlDir);
 		$channels=scandir($jsonDir);
 		$channelNames=array();
@@ -172,10 +205,10 @@
 			}
 			$array=explode('.json',$channel);
 			$channelName=$array[0];
-			
+
 			$channelHtmlFile=$htmlDir.'/'.$channelName.'.html';
 			if(file_exists($channelHtmlFile)) {
-				echo "HTML already exists ".$channelJsonFile."\n";
+				echo "HTML already exists ".$channelHtmlFile."\n";
 				continue;
 			}
 
@@ -185,12 +218,12 @@
 			echo '====='."\n";
 			$messages=json_decode(file_get_contents($jsonDir.'/'.$channel),true);
 			if(empty($messages)) continue;
-			$htmlMessages='<html><body><style>'.$stylesheet.'</style><div class="messages">';
+			$htmlMessages='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>#'.$channelName.'</title></head><body><style>'.$stylesheet.'</style><div class="messages">';
 			foreach($messages as $message) {
 				if(empty($message)) continue;
 				if(empty($message['text'])) continue;
 				echo '.';
-				
+
 				// change <@U38A3DE9> into levelsio
 				if(stripos($message['text'],'<@')!==false) {
 					$usersInMessage=explode('<@',$message['text']);
@@ -247,9 +280,9 @@
 				$time=$array[0];
 
 				$message['text']=utf8_decode($message['text']);
-				
+
 				$htmlMessage='';
-				$htmlMessage.='<div><img src="'.$usersById[$message['user']]['profile']['image_72'].'" /><div class="message"><div class="username">'.$usersById[$message['user']]['name'].'</div><div class="time">'.date('Y-m-d H:i',$message['ts']).'</div><div class="msg">'.$message['text']."</div></div></div><br/>\n";
+				$htmlMessage.='<div class="message-row"><img src="'.$usersById[$message['user']]['profile']['image_72'].'" /><div class="message"><div class="username">'.$usersById[$message['user']]['name'].'</div><div class="time">'.date('Y-m-d H:i',$message['ts']).'</div><div class="msg">'.$message['text']."</div></div></div>\n";
 				$htmlMessages.=$htmlMessage;
 			}
 
