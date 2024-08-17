@@ -82,6 +82,12 @@
 	mb_internal_encoding("UTF-8");
 	error_reporting(E_ERROR);
 
+	function file_get_contents_utf8($fn) {
+		$content = file_get_contents($fn);
+		return mb_convert_encoding($content, 'UTF-8',
+			 mb_detect_encoding($content, 'UTF-8, ISO-8859-1', true));
+	}
+
 	// <config>
 		$stylesheet="
 			* {
@@ -158,7 +164,7 @@
 				foreach($dates as $date) {
 					if(!is_dir($date)) {
 						echo '.';
-						$messages=json_decode(file_get_contents($slack_export_path.'/'.$channel.'/'.$date),true);
+						$messages=json_decode(file_get_contents_utf8($slack_export_path.'/'.$channel.'/'.$date),true);
 						if(empty($messages)) continue;
 						foreach($messages as $message) {
 							array_push($chats,$message);
@@ -174,7 +180,7 @@
     // </compile daily logs into single channel logs>
 
 	// <load users file>
-		$users=json_decode(file_get_contents($slack_export_path.'/'.'users.json'),true);
+		$users=json_decode(file_get_contents_utf8($slack_export_path.'/'.'users.json'),true);
 		$usersById=array();
 		foreach($users as $user) {
 			$usersById[$user['id']]=$user;
@@ -182,7 +188,7 @@
 	// </load users file>
 
 	// <load channels file>
-		$channels=json_decode(file_get_contents($slack_export_path.'/'.'channels.json'),true);
+		$channels=json_decode(file_get_contents_utf8($slack_export_path.'/'.'channels.json'),true);
 		$channelsById=array();
 		foreach($channels as $channel) {
 			$channelsById[$channel['id']]=$channel;
@@ -216,7 +222,7 @@
 			echo '====='."\n";
 			echo 'Generating HTML for #'.$channelName."\n";
 			echo '====='."\n";
-			$messages=json_decode(file_get_contents($jsonDir.'/'.$channel),true);
+			$messages=json_decode(file_get_contents_utf8($jsonDir.'/'.$channel),true);
 			if(empty($messages)) continue;
 			$htmlMessages='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"><title>#'.$channelName.'</title></head><body><style>'.$stylesheet.'</style><div class="messages">';
 			foreach($messages as $message) {
@@ -296,7 +302,7 @@
 	// </generate html from channel logs>
 
 	// <make index html>
-		$html='<html><body><style>'.$stylesheet.'</style><div class="messages">';
+		$html='<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="ie=edge"></head><body><style>'.$stylesheet.'</style><div class="messages">';
 		foreach($mostRecentChannelTimestamps as $channel => $timestamp) {
 			$html.='<a href="./'.$channel.'.html">#'.$channel.'</a> '.date('Y-m-d H:i',$timestamp).'<br/>'."\n";
 		}
